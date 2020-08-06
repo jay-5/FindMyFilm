@@ -1,47 +1,81 @@
-
-// Search bar is added to enter queries
-let search = document.querySelector("#search")
-
-// The event listener will send an API request when clicked
-//search.addEventListener("click", () => {
-  //console.log("button was pressed")
-    //sendAPIRequest()
-//})
-
-// Fetches API data
-async function sendAPIRequest(){
-    let APP_ID = "f8177942"
-    let API_KEY = "f302c4ff0068237963ce94d618251817"
-    let response = await fetch(`https://api.edamam.com/search?app_id=${APP_ID}&app_key=${API_KEY}&q=tacos`);
-    console.log(response)
-    let data = await response.json()
-    console.log(data)
-    useData(data)
-}
-
-let url = "https://api.edamam.com/search.json?api-key=f302c4ff0068237963ce94d6182518"
-let recipes = document.getElementById("recipies");
-fetch(url).then(response => response.json()).then(data => {
-
-    data.results.map(recipe => {
-        let a = document.createElement('a');
-        a.setAttribute('href', recipe.url);
-        a.innerHTML = recipe.title;
-        headlines.appendChild(a);
-
-    })
-})
-
-// Displays data from API on cards
-function useData(data){
-    document.querySelector("#content").innerHTML = `
-    <div class="card col-3 offset-2" style="width: 18rem;">
-        <img src="${data.hits[0].recipe.image}" class="card-img-top" alt="...">
-        <div class="card-body">
-            <h5 class="card-title"> ${data.hits[0].recipe.label}</h5>
-            <p class="card-text">Source: ${data.hits[0].recipe.source}</p>
-            <a href="${data.hits[0].recipe.url}" class="btn btn-primary">Go to URL</a>
-        </div>
-    </div>
-    `
-}
+$(document).ready(() => {
+    $('#searchForm').on('submit', (e) => {
+      let searchText = $('#searchText').val();
+      getMovies(searchText);
+      e.preventDefault();
+    });
+  });
+  
+  function getMovies(searchText){
+    axios.get('http://www.omdbapi.com?s='+searchText)
+      .then((response) => {
+        console.log(response);
+        let movies = response.data.Search;
+        let output = '';
+        $.each(movies, (index, movie) => {
+          output += `
+            <div class="col-md-3">
+              <div class="well text-center">
+                <img src="${movie.Poster}">
+                <h5>${movie.Title}</h5>
+                <a onclick="movieSelected('${movie.imdbID}')" class="btn btn-primary" href="#">Movie Details</a>
+              </div>
+            </div>
+          `;
+        });
+  
+        $('#movies').html(output);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+  
+  function movieSelected(id){
+    sessionStorage.setItem('movieId', id);
+    window.location = 'movie.html';
+    return false;
+  }
+  
+  function getMovie(){
+    let movieId = sessionStorage.getItem('movieId');
+  
+    axios.get('http://www.omdbapi.com?i='+movieId)
+      .then((response) => {
+        console.log(response);
+        let movie = response.data;
+  
+        let output =`
+          <div class="row">
+            <div class="col-md-4">
+              <img src="${movie.Poster}" class="thumbnail">
+            </div>
+            <div class="col-md-8">
+              <h2>${movie.Title}</h2>
+              <ul class="list-group">
+                <li class="list-group-item"><strong>IMDB Rating:</strong> ${movie.imdbRating}</li>
+                <li class="list-group-item"><strong>Director:</strong> ${movie.Director}</li>
+                <li class="list-group-item"><strong>Actors:</strong> ${movie.Actors}</li>
+                <li class="list-group-item"><strong>Genre:</strong> ${movie.Genre}</li>
+                <li class="list-group-item"><strong>Released:</strong> ${movie.Released}</li>
+                <li class="list-group-item"><strong>Rated:</strong> ${movie.Rated}</li>
+              </ul>
+            </div>
+          </div>
+          <div class="row">
+            <div class="well">
+              <h3>Plot</h3>
+              ${movie.Plot}
+              <hr>
+              <a href="http://imdb.com/title/${movie.imdbID}" target="_blank" class="btn btn-primary">View IMDB data</a>
+              <a href="index.html" class="btn btn-default">Return to Search</a>
+            </div>
+          </div>
+        `;
+  
+        $('#movie').html(output);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
